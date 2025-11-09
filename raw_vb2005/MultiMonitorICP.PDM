@@ -1,0 +1,98 @@
+[Root]
+Most Recent Package=ISee1
+
+
+[Package|ISee1|Root]
+SubWizProgID=PDWizard.SetupPkgSubWiz
+BuildFolder=E:\Work1\ISee_Monitor\Package
+
+[Package|ISee1|Configure DAO ISAMs]
+Applicable=No
+
+[Package|ISee1|Configure DAO ODBC]
+JetWorkspace=
+ODBCDirect=
+
+[Package|ISee1|Files Found]
+
+[Package|ISee1|Files Released]
+
+[Package|ISee1|Missing Dependency Information]
+
+[Package|ISee1|Out-of-Date Dependency Information]
+E:\WINDOWS\system32\comdlg32.ocx=
+
+[Package|ISee1|Files Added]
+
+[Package|ISee1|Files Removed]
+
+[Package|ISee1|Files In Project]
+E:\Work1\ISee_Monitor\ISeeMT.exe=Yes
+E:\WINDOWS\system32\msvbvm60.dll=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\OLEAUT32.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\OLEPRO32.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\ASYCFILT.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\STDOLE2.TLB=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\COMCAT.DLL=Yes
+E:\WINDOWS\system32\VB6CHT.DLL=Yes
+E:\WINDOWS\system32\comdlg32.ocx=Yes
+E:\WINDOWS\system32\CMDLGCHT.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP.EXE=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP1.EXE=Yes
+E:\WINDOWS\system32\VB6STKIT.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\ST6UNST.EXE=Yes
+
+[Package|ISee1|Configure Registry Files]
+Applicable=No
+
+[Package|ISee1|Configure Remote Servers]
+Applicable=No
+
+[Package|ISee1|Install Locations]
+E:\Work1\ISee_Monitor\ISeeMT.exe=$(AppPath)
+E:\WINDOWS\system32\msvbvm60.dll=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\OLEAUT32.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\OLEPRO32.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\ASYCFILT.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\STDOLE2.TLB=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\COMCAT.DLL=$(WinSysPathSysFile)
+E:\WINDOWS\system32\VB6CHT.DLL=$(AppPath)
+E:\WINDOWS\system32\comdlg32.ocx=$(AppPath)
+E:\WINDOWS\system32\CMDLGCHT.DLL=$(AppPath)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP.EXE=$(AppPath)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP1.EXE=$(WinPath)
+E:\WINDOWS\system32\VB6STKIT.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\ST6UNST.EXE=$(WinPath)
+
+[Package|ISee1|Configure Shared Files]
+Applicable=Yes
+E:\Work1\ISee_Monitor\ISeeMT.exe=No
+E:\WINDOWS\system32\VB6CHT.DLL=No
+E:\WINDOWS\system32\comdlg32.ocx=No
+E:\WINDOWS\system32\CMDLGCHT.DLL=No
+
+[Package|ISee1|Distribution]
+Type=single
+Size=
+Title=Aurora Hacker ISee Monitor Test
+
+[Package|ISee1|IconGroups]
+Group0=Aurora Hacker
+PrivateGroup0=True
+Parent0=$(Programs)
+
+[Package|ISee1|Aurora Hacker]
+Icon1=ISeeMT.exe
+Title1=ISee Monitor Test
+StartIn1=$(AppPath)
+Key1=Icon1
+
+[Package|ISee1|Package]
+PackageFolder=E:\Work1\ISee_Monitor\Package
+ProjectFolder=E:\Work1\ISee_Monitor
+ServerSideCab=
+File1=E:\Work1\ISee_Monitor\Package\setup.exe
+File2=E:\Work1\ISee_Monitor\Package\Setup.Lst
+File3=E:\Work1\ISee_Monitor\Package\ISeeMT.CAB
+Handler1=PDWizard.FolderDplySubWiz
+Handler2=PDWizard.WebPostDplySubWiz
