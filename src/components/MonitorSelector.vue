@@ -1,287 +1,323 @@
 <template>
-  <div class="monitor-selector">
-    <div class="header">
-      <h1>ISee Monitor Test</h1>
-      <div class="controls">
-        <button @click="toggleLanguage">{{ language === 'en' ? '中文' : 'English' }}</button>
-        <button @click="refreshMonitors">{{ t('refresh') }}</button>
-        <button @click="closeApp">{{ t('close') }}</button>
-      </div>
+  <div class="selector-root">
+    <!-- Top toolbar row matching VB2005 FrmMonitorSelect -->
+    <div class="toolbar">
+      <span class="lbl">{{ t.changeLanguage }}</span>
+      <button class="btn" @click="setLang('en')">English</button>
+      <button class="btn" @click="setLang('zh')">繁體中文</button>
+      <div class="vline"></div>
+      <button class="btn" @click="closeApp">{{ t.closeApp }}</button>
+      <div class="spacer"></div>
+      <span class="lbl">{{ t.whichView }}</span>
+      <select v-model="viewIdx" class="combo">
+        <option v-for="i in monitors.length" :key="i" :value="i">{{ i }}</option>
+      </select>
+      <button class="btn" @click="viewDesktopRange">{{ t.viewDesktopRange }}</button>
     </div>
 
-    <div class="monitor-display">
-      <h2>{{ t('selectMonitor') }}</h2>
-      <div class="monitor-grid" ref="monitorGrid">
+    <!-- Frame1: virtual desktop / monitor selection -->
+    <fieldset class="frame1">
+      <legend>{{ t.selectDisplayLegend }}</legend>
+      <div class="vdesktop" ref="vdesktop">
         <button
-          v-for="monitor in monitors"
-          :key="monitor.id"
-          class="monitor-button"
-          :style="getMonitorButtonStyle(monitor)"
-          @click="selectMonitor(monitor)"
+          v-for="(m, i) in monitors"
+          :key="m.id"
+          class="monitor-btn"
+          :style="btnStyle(m)"
+          @click="selectMonitor(m)"
+          @mouseenter="hoveredMonitor = m"
+          @mouseleave="hoveredMonitor = null"
         >
-          {{ t('monitor') }} {{ monitor.id }}
+          {{ t.monitor }}<br>{{ i + 1 }}
         </button>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="info">
-      <div class="selected-info" v-if="hoveredMonitor">
-        <h3>{{ t('monitorInfo') }}</h3>
-        <p>{{ t('left') }}: {{ hoveredMonitor.x }}</p>
-        <p>{{ t('top') }}: {{ hoveredMonitor.y }}</p>
-        <p>{{ t('width') }}: {{ hoveredMonitor.width }}</p>
-        <p>{{ t('height') }}: {{ hoveredMonitor.height }}</p>
+    <!-- Frame2: Chinese footer info matching VB2005 -->
+    <fieldset class="frame2">
+      <legend>This Frame Using Chinese BIG-5 繁體中文資訊</legend>
+      <div class="footer-row">
+        <span class="red2">程式新作 by :</span>&nbsp;
+        <span style="color:#FF0000">極</span><span style="color:#FF8000">光</span><span style="color:#00AA00">駭</span><span style="color:#00CC00">客</span>
+        &nbsp;&nbsp;
+        <span class="red2">部落格 :</span>&nbsp;
+        <a class="blog-link" href="#" @click.prevent="openBlog">http://blog.yam.com/user/melix.html</a>
+        &nbsp;&nbsp;
+        <span class="red3">可將您的建議增加功能或提供圖形供作者參考</span>
+        <span class="ver">V0.9.23</span>
       </div>
-    </div>
+      <div class="disclaimer">
+        您要使用就要遵守，否則就不要使用：Free！不得將程式語法與圖形供作它用或商業用途，其他請全力支持！
+      </div>
+    </fieldset>
 
-    <div class="footer">
-      <p>{{ t('author') }}: <a href="http://blog.yam.com/user/melix.html" target="_blank">極光駭客</a></p>
-      <p>{{ t('version') }}: v1.0.0 (Tauri 2.0)</p>
+    <!-- Monitor info popup on hover -->
+    <div v-if="hoveredMonitor" class="monitor-info-popup">
+      <div>{{ t.leftStart }} {{ hoveredMonitor.x }}</div>
+      <div>{{ t.topStart }} {{ hoveredMonitor.y }}</div>
+      <div>{{ t.rightEnd }} {{ hoveredMonitor.x + hoveredMonitor.width }}</div>
+      <div>{{ t.bottomEnd }} {{ hoveredMonitor.y + hoveredMonitor.height }}</div>
+      <div>{{ t.widthLabel }} {{ hoveredMonitor.width }}</div>
+      <div>{{ t.heightLabel }} {{ hoveredMonitor.height }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
 
-// Tauri API - 使用靜態導入但處理錯誤
 let tauriInvoke = null
-
-// 嘗試導入 Tauri API（僅在建置時可用）
-const initTauriAPI = async () => {
+const initTauri = async () => {
   try {
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-      const tauriCore = await import('@tauri-apps/api/core')
-      tauriInvoke = tauriCore.invoke
+      const m = await import('@tauri-apps/api/core')
+      tauriInvoke = m.invoke
     }
-  } catch (e) {
-    console.warn('Tauri API not available, using mock data')
-  }
+  } catch {}
 }
-
-// 包裝 invoke 函數
 const invoke = async (cmd, args) => {
-  // 確保 Tauri API 已初始化
-  if (!tauriInvoke && typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-    await initTauriAPI()
-  }
-
-  if (tauriInvoke) {
-    return await tauriInvoke(cmd, args)
-  }
-
-  // Mock data for non-Tauri environment
+  if (!tauriInvoke && typeof window !== 'undefined' && window.__TAURI_INTERNALS__) await initTauri()
+  if (tauriInvoke) return tauriInvoke(cmd, args)
   if (cmd === 'get_monitors_command') {
-    return [
-      { id: 0, x: 0, y: 0, width: 1920, height: 1080, is_primary: true, name: 'Monitor 1' }
-    ]
+    return [{ id: 0, x: 0, y: 0, width: 1920, height: 1080, is_primary: true, name: 'Monitor 1' }]
   }
   return null
 }
 
-const emit = defineEmits(['select'])
+const props = defineProps({
+  lang: { type: String, default: 'en' }
+})
+const emit = defineEmits(['select', 'changeLang'])
+const t = useI18n(computed(() => props.lang))
 
 const monitors = ref([])
+const viewIdx = ref(1)
 const hoveredMonitor = ref(null)
-const language = ref('en')
+const vdesktop = ref(null)
 
-const translations = {
-  en: {
-    refresh: 'Refresh',
-    close: 'Close',
-    selectMonitor: 'Select display monitor',
-    monitor: 'Monitor',
-    monitorInfo: 'Monitor Information',
-    left: 'Left',
-    top: 'Top',
-    width: 'Width',
-    height: 'Height',
-    author: 'Author',
-    version: 'Version'
-  },
-  zh: {
-    refresh: '重新整理',
-    close: '關閉程式',
-    selectMonitor: '選擇一個您要測試的螢幕',
-    monitor: '螢幕',
-    monitorInfo: '螢幕資訊',
-    left: '左邊界',
-    top: '上邊界',
-    width: '寬度',
-    height: '高度',
-    author: '程式作者',
-    version: '版本'
-  }
-}
-
-const t = (key) => {
-  return translations[language.value][key] || key
-}
-
-const toggleLanguage = () => {
-  language.value = language.value === 'en' ? 'zh' : 'en'
-}
+const setLang = (l) => { emit('changeLang', l) }
 
 const refreshMonitors = async () => {
   try {
-    const monitorList = await invoke('get_monitors_command')
-    monitors.value = monitorList
-  } catch (error) {
-    console.error('Failed to get monitors:', error)
+    monitors.value = await invoke('get_monitors_command')
+  } catch (e) {
+    console.error(e)
   }
 }
 
-const selectMonitor = (monitor) => {
-  emit('select', monitor)
-}
+const selectMonitor = (m) => { emit('select', m) }
 
 const closeApp = async () => {
-  try {
-    await invoke('close_app')
-  } catch (error) {
-    console.error('Failed to close app:', error)
-  }
+  try { await invoke('close_app') } catch {}
 }
 
-const getMonitorButtonStyle = (monitor) => {
-  // 計算虛擬桌面的範圍
-  const minX = Math.min(...monitors.value.map(m => m.x))
-  const minY = Math.min(...monitors.value.map(m => m.y))
-  const maxX = Math.max(...monitors.value.map(m => m.x + m.width))
-  const maxY = Math.max(...monitors.value.map(m => m.y + m.height))
-  
-  const virtualWidth = maxX - minX
-  const virtualHeight = maxY - minY
-  
-  // 縮放比例
-  const scale = 0.15
-  const offsetX = 50
-  const offsetY = 100
-  
+const openBlog = () => {
+  window.open('http://blog.yam.com/user/melix.html', '_blank')
+}
+
+const viewDesktopRange = () => {
+  const idx = viewIdx.value - 1
+  const m = monitors.value[idx]
+  if (!m) return
+  const tl = t.value
+  const msg = `${tl.leftStart} ${m.x}\n${tl.topStart} ${m.y}\n${tl.rightEnd} ${m.x + m.width}\n${tl.bottomEnd} ${m.y + m.height}\n${tl.widthLabel} ${m.width}\n${tl.heightLabel} ${m.height}`
+  alert(msg)
+}
+
+// Position buttons matching VB2005 CmdMntFix logic
+// VB scale: 1 monitor pixel = 1 twip = 1/15 display pixel
+// Offset: MyStartX=4760, MyStartY=3600 twips; Frame1 starts at Top=720
+// So within Frame1: left=(monX + 4760)/15, top=(monY + 3600 - 720)/15
+const SCALE = 1 / 15
+const OFFSET_X = 4760 / 15  // ~317px
+const OFFSET_Y = (3600 - 720) / 15  // ~192px
+
+const btnStyle = (m) => {
+  // Compute min coords to allow negative-offset monitors
+  const minX = Math.min(...monitors.value.map(mon => mon.x))
+  const minY = Math.min(...monitors.value.map(mon => mon.y))
+  const left = (m.x - minX) * SCALE + OFFSET_X
+  const top = (m.y - minY) * SCALE + OFFSET_Y
+  const width = m.width * SCALE
+  const height = m.height * SCALE
   return {
     position: 'absolute',
-    left: `${(monitor.x - minX) * scale + offsetX}px`,
-    top: `${(monitor.y - minY) * scale + offsetY}px`,
-    width: `${monitor.width * scale}px`,
-    height: `${monitor.height * scale}px`
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    minWidth: '40px',
+    minHeight: '24px',
   }
 }
 
-onMounted(() => {
-  refreshMonitors()
+onMounted(async () => {
+  await refreshMonitors()
 })
 </script>
 
 <style scoped>
-.monitor-selector {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-  background: #f5f5f5;
+/* Classic Windows 9x/2000 style */
+.selector-root {
+  width: 784px;
+  min-height: 440px;
+  background: #d4d0c8;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-size: 12px;
+  color: #000;
+  padding: 4px;
   display: flex;
   flex-direction: column;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #ccc;
-}
-
-.header h1 {
-  font-size: 24px;
-  color: #333;
-}
-
-.controls {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-button:hover {
-  background: #0056b3;
-}
-
-.monitor-display {
-  flex: 1;
+  gap: 4px;
   position: relative;
-  border: 1px solid #ccc;
-  background: white;
-  border-radius: 4px;
-  padding: 20px;
-  margin-bottom: 20px;
 }
 
-.monitor-display h2 {
-  margin-bottom: 20px;
-  color: #333;
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  flex-wrap: nowrap;
 }
 
-.monitor-grid {
+.lbl {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.spacer { flex: 1; }
+
+.vline {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to right, #808080, #fff);
+  margin: 0 4px;
+}
+
+.btn {
+  padding: 2px 8px;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-size: 12px;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  min-width: 60px;
+  white-space: nowrap;
+}
+.btn:active {
+  border-color: #808080 #fff #fff #808080;
+  padding: 3px 7px 1px 9px;
+}
+.btn:hover { background: #e0ddd5; }
+
+.combo {
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-size: 12px;
+  background: #fff;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 1px 2px;
+  height: 22px;
+}
+
+.frame1 {
+  flex: 1;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #d4d0c8;
+  padding: 4px;
+  min-height: 280px;
+  position: relative;
+}
+.frame1 legend {
+  font-size: 12px;
+  padding: 0 4px;
+  background: #d4d0c8;
+}
+
+.vdesktop {
   position: relative;
   width: 100%;
-  height: calc(100% - 40px);
+  height: 260px;
+  overflow: hidden;
 }
 
-.monitor-button {
-  background: #28a745;
-  border: 2px solid #1e7e34;
+.monitor-btn {
+  position: absolute;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+  color: #000;
+  padding: 2px;
+}
+.monitor-btn:hover {
+  background: #c4c0b8;
+}
+.monitor-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+
+.frame2 {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #d4d0c8;
+  padding: 4px 8px;
+}
+.frame2 legend {
+  font-size: 12px;
+  padding: 0 4px;
+  background: #d4d0c8;
+}
+
+.footer-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  gap: 2px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin-bottom: 4px;
+  position: relative;
 }
 
-.monitor-button:hover {
-  background: #218838;
+.red2 { color: #C00000; }
+.red3 { color: #C00000; font-size: 11px; }
+
+.blog-link {
+  color: #0000CC;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 12px;
 }
 
-.info {
-  min-height: 120px;
-  padding: 15px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 20px;
+.ver {
+  margin-left: auto;
+  font-size: 12px;
+  color: #000;
 }
 
-.selected-info h3 {
-  margin-bottom: 10px;
+.disclaimer {
+  font-size: 11px;
   color: #333;
 }
 
-.selected-info p {
-  margin: 5px 0;
-  color: #666;
-}
-
-.footer {
-  text-align: center;
-  padding-top: 10px;
-  border-top: 1px solid #ccc;
-  color: #666;
-}
-
-.footer a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.footer a:hover {
-  text-decoration: underline;
+.monitor-info-popup {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  background: #ffffcc;
+  border: 1px solid #808080;
+  padding: 6px 8px;
+  font-size: 11px;
+  z-index: 100;
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.6;
 }
 </style>
-
