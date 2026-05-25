@@ -824,9 +824,13 @@ const doText3 = () => {
   hidePanel()
 }
 
-const handleClose = () => {
+const handleClose = async () => {
   stopAnim()
-  emit('close')
+  try {
+    await invoke('close_window')
+  } catch {
+    emit('close')
+  }
 }
 
 // ── mouse/keyboard ────────────────────────────────────────────────────────
@@ -858,20 +862,10 @@ const initCanvas = () => {
   fillScreen(128, 128, 128)  // VB default: gray BackColor
 }
 
-onMounted(async () => {
+onMounted(() => {
   initCanvas()
   window.addEventListener('resize', initCanvas)
   window.addEventListener('keydown', handleKey)
-
-  try {
-    await invoke('position_window_on_monitor_command', {
-      monitorId: props.monitor.id,
-      x: props.monitor.x,
-      y: props.monitor.y,
-      width: props.monitor.width,
-      height: props.monitor.height
-    })
-  } catch {}
 })
 
 onUnmounted(() => {

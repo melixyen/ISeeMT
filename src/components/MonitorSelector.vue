@@ -88,7 +88,7 @@ const invoke = async (cmd, args) => {
 const props = defineProps({
   lang: { type: String, default: 'en' }
 })
-const emit = defineEmits(['select', 'changeLang'])
+const emit = defineEmits(['changeLang'])
 const t = useI18n(computed(() => props.lang))
 
 const monitors = ref([])
@@ -106,7 +106,15 @@ const refreshMonitors = async () => {
   }
 }
 
-const selectMonitor = (m) => { emit('select', m) }
+const selectMonitor = async (m) => {
+  await invoke('open_test_window', {
+    monitorId: m.id,
+    x: m.x,
+    y: m.y,
+    width: m.width,
+    height: m.height,
+  })
+}
 
 const closeApp = async () => {
   try { await invoke('close_app') } catch {}
@@ -125,28 +133,21 @@ const viewDesktopRange = () => {
   alert(msg)
 }
 
-// Position buttons matching VB2005 CmdMntFix logic
-// VB scale: 1 monitor pixel = 1 twip = 1/15 display pixel
-// Offset: MyStartX=4760, MyStartY=3600 twips; Frame1 starts at Top=720
-// So within Frame1: left=(monX + 4760)/15, top=(monY + 3600 - 720)/15
+// VB2005 CmdMntFix positioning: 1 pixel = 1 twip = 1/15 display pixel
+// MyStartX=4760, MyStartY=3600 twips; Frame1 Top=720 twips
 const SCALE = 1 / 15
-const OFFSET_X = 4760 / 15  // ~317px
-const OFFSET_Y = (3600 - 720) / 15  // ~192px
+const OFFSET_X = 4760 / 15
+const OFFSET_Y = (3600 - 720) / 15
 
 const btnStyle = (m) => {
-  // Compute min coords to allow negative-offset monitors
   const minX = Math.min(...monitors.value.map(mon => mon.x))
   const minY = Math.min(...monitors.value.map(mon => mon.y))
-  const left = (m.x - minX) * SCALE + OFFSET_X
-  const top = (m.y - minY) * SCALE + OFFSET_Y
-  const width = m.width * SCALE
-  const height = m.height * SCALE
   return {
     position: 'absolute',
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${width}px`,
-    height: `${height}px`,
+    left: `${(m.x - minX) * SCALE + OFFSET_X}px`,
+    top: `${(m.y - minY) * SCALE + OFFSET_Y}px`,
+    width: `${m.width * SCALE}px`,
+    height: `${m.height * SCALE}px`,
     minWidth: '40px',
     minHeight: '24px',
   }
@@ -241,7 +242,7 @@ onMounted(async () => {
   position: relative;
   width: 100%;
   height: 260px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .monitor-btn {

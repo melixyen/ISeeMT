@@ -1,27 +1,38 @@
 <template>
   <div class="app">
-    <div v-if="!selectedMonitor" class="selector-wrapper">
-      <MonitorSelector :lang="lang" @select="handleMonitorSelect" @changeLang="lang = $event" />
+    <div v-if="isTestWindow && testMonitor" style="width:100vw;height:100vh">
+      <TestPatternDisplay :monitor="testMonitor" :lang="lang" />
     </div>
-    <TestPatternDisplay
-      v-else
-      :monitor="selectedMonitor"
-      :lang="lang"
-      @close="handleClose"
-    />
+    <div v-else-if="!isTestWindow" class="selector-wrapper">
+      <MonitorSelector :lang="lang" @changeLang="lang = $event" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import MonitorSelector from './components/MonitorSelector.vue'
 import TestPatternDisplay from './components/TestPatternDisplay.vue'
 
-const selectedMonitor = ref(null)
 const lang = ref('en')
+const isTestWindow = ref(false)
+const testMonitor = ref(null)
 
-const handleMonitorSelect = (m) => { selectedMonitor.value = m }
-const handleClose = () => { selectedMonitor.value = null }
+onMounted(async () => {
+  if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      const { invoke } = await import('@tauri-apps/api/core')
+      const win = getCurrentWindow()
+      if (win.label.startsWith('test-')) {
+        isTestWindow.value = true
+        testMonitor.value = await invoke('get_my_monitor_data')
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+})
 </script>
 
 <style>
